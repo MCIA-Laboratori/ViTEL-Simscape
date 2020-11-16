@@ -1,0 +1,72 @@
+component Convertidor_Buck_Losses
+% Convertidor_Buck_Losses
+% Convertidor Reductor de tensió que transfereix potencia en funció de duty
+% i rendiment, on aquest varia en funcio de la potencia entregada.
+
+% Project: bePower
+% Program: Simple Buck-Like Converter with performance curve.
+% Author: Carles Colls Castro
+% Date Created: 2020 07 30
+% Purpose: Component for Driving Cycle Simulation
+
+
+% Revision History:
+% Date        Author      Ref    Revision (Date in YYYYMMDD format)
+% 20200806    CCC         001    Primera Implementacio
+
+
+inputs
+    duty = {0,'1'}; % Duty 
+end
+
+nodes
+    p1 = foundation.electrical.electrical; % Vin+:left
+    n1 = foundation.electrical.electrical; % Vin-:left
+    p2 = foundation.electrical.electrical; % Vout+:right
+    n2 = foundation.electrical.electrical; % Vout-:right
+end
+
+parameters(Size=variable)
+    mu_fPOW = { [1,1], '1'}; % Performance Values
+    fPOW = { [[0,100]],'W'}; % Power Values
+end
+
+parameters(Access=private)
+    mu = {1,'1'}; % Instantaneous Parameter
+end
+
+variables %(Access=private)
+    v1 = {0, 'V'}; % Voltage on A side
+    v2 = {0, 'V'}; % Voltage on B side
+    i1 = {0, 'A'}; % Current on A side
+    i2 = {0, 'A'}; % Current on B side
+    POW = {0,'W'}; % Power on A side
+end
+
+branches
+    i1 : p1.i -> n1.i;
+    i2 : p2.i -> n2.i;
+end
+    
+equations
+        
+        v1 == p1.v - n1.v;
+        v2 == p2.v - n2.v;
+        v2 == duty*v1;
+        POW == abs(v2*i2);
+        let
+          mu = tablelookup(fPOW,mu_fPOW,POW,interpolation=linear,extrapolation=linear);
+        in
+          i1 == -i2/(mu)*v2/v1;
+        end
+end
+
+annotations
+    %mu : Side = bottom;
+    duty : Side = top;
+    %p : Side = left;
+    %n : Side = left;
+    %p2 : Side = right;
+    %n2 : Side = Right;
+end
+end

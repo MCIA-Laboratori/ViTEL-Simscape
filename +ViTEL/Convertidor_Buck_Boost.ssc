@@ -1,0 +1,78 @@
+component Convertidor_Buck_Boost
+% Convertidor_Buck_Boost
+% Convertidor Ideal de tensió que transfereix potencia en funció de duty
+% i rendiment. Funciona tant como elevador com reductor, amb duty de 0.5 per
+% manteniment del nivell.
+
+% Project: bePower
+% Program: Simple Buck-Boost-Like Converter Model.
+% Author: Carles Colls Castro
+% Date Created: 2020 07 30
+% Purpose: Component for Driving Cycle Simulation
+
+% Revision History:
+% Date        Author      Ref    Revision (Date in YYYYMMDD format)
+% 20200730    CCC         001    Versió inicial
+% 20200804    CCC         002    Prova implementacio tipus trafo
+
+inputs
+    mu = {1,'1'}; % Rendiment
+    duty = {0,'1'}; % Duty 
+end
+
+nodes
+    p1 = foundation.electrical.electrical; % Vin+:left
+    n1 = foundation.electrical.electrical; % Vin-:left
+    p2 = foundation.electrical.electrical; % Vout+:right
+    n2 = foundation.electrical.electrical; % Vout-:right
+end
+
+parameters
+    mu_fPOW = { 1, '1'}; % Performance
+    n = {2,'1'} % Max Boost Ratio n=Vb/Va
+end
+
+parameters(Access=private)
+    a_parab = { 1, '1'} % squared parameter of a parabola
+    b_parab = { 1, '1'} % linear paramenter of a parabola
+end
+
+variables %(Access=private)
+    v1 = {0, 'V'}; % Voltage on A side
+    v2 = {0, 'V'}; % Voltage on B side
+    i1 = {0, 'A'}; % Current on A side
+    i2 = {0, 'A'}; % Current on B side
+    %POWA = {0,'W'}; % Power on A side
+    %POWB = {0,'W'}; % Power on B side
+    %R = {1e-6,'Ohm'} % Resistencia interna
+    %direction = {true, '1ogic'}; % Bool for direction
+end
+
+branches
+    i1 : p1.i -> n1.i;
+    i2 : p2.i -> n2.i;
+end
+    
+function setup
+    % OneNote-bePower-Implementacio-Convertidors-BB
+    a_parab=(0.5*n-1)*4;
+    b_parab=n-a_parab;
+end
+
+equations
+    assert(mu>0)
+        v1 == p1.v - n1.v;
+        v2 == p2.v - n2.v;
+        v2 == v1*(a_parab*duty^2+b_parab*duty);
+        i1 == -i2/(mu)*v2/v1;
+end
+
+annotations
+    mu : Side = bottom;
+    duty : Side = top;
+    %p : Side = left;
+    %n : Side = left;
+    %p2 : Side = right;
+    %n2 : Side = Right;
+end
+end

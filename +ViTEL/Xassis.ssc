@@ -1,0 +1,90 @@
+component Xassis
+% Xassis Vehicle
+% Xassis de vehicle genèric per ViTEL. Veure la descripció d'us a la documentació.
+
+% Project: bePower
+% Program: Xassis Model
+% Author: Carles Colls Castro
+% Date Created: 2020 08 18
+% Purpose: Component for Driving Cycle Simulation
+
+% Revision History:
+% Date        Author      Ref    Revision (Date in YYYYMMDD format)
+% 20200818    CCC         001    Versió inicial
+% 20200819    CCC         002    Primera versió funcinal senzilla.
+% 20200822    CCC         003    Versió modificada compatible amb Driveline.
+
+inputs
+    theta = { 0 , 'rad' }; % theta
+end
+
+outputs
+    Speed = { 0 , 'm/s' }; % Speed
+    Fz2 = { 0, 'N'}; % Fzr
+    Fz1 = { 0, 'N'}; % Fzf
+    
+end
+
+parameters
+    m = { 10 , 'kg' };      % Vehicle Mass
+    l1 = {0.1 , 'm' };  % Front Axel distance to C.M.
+    l2 = {0.1 , 'm' };  % Rear Axel distance to C.M.
+    h = {0.1 , 'm' };  % CM height from the ground.
+    n = {1,'1'}; % Number of wheels per axis.
+    
+    % Fregament Aire:
+    Vvent = {0,'m/s'}; % Velocitat del Vent (+ de front)
+    Cd = {0, '1'}; % Coeficient d'arrosegament.
+    A1 = {0.1,'m^2'} % Frontal Area.
+    ro = {1.18, 'kg/m^3'} % Air density
+end
+
+parameters(Access = protected)
+    g = {9.8 , 'm/s^2'} % Gravity acceleratino
+    Ff = {1, 'N'} % Force Parameter
+    Spiz = { 1 , 'm/s' }; % [V]
+end
+
+nodes
+    V = foundation.mechanical.translational.translational; % X_react
+end
+
+variables(Access = protected)
+    Fx = { 0, 'N'};     % Horizontal Force
+    Fd = { 0, 'N'}; % Wind Force
+    Accel = { 0, 'm/s^2'} % Acceleration
+
+end
+
+branches
+     Fx : V.f -> *;
+end
+
+equations
+    % Additional equation:
+    Accel == der(V.v);
+    
+    % Sortida de velocitat del vehicle:
+    Speed == V.v;
+    
+    % Definició de força de fregament aire:
+    Fd == - 0.5*A1*ro*Cd*(V.v+Vvent)^2*sign(V.v); 
+    
+    % Equilibri: Sumatori moments en O1 i O2.
+    n * Fz1 == -(m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
+    n * Fz2 ==  (m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
+    
+    % Equilibri: Sumatori forces en X.
+    m*Accel == n * Fx + Fd - m*g*sin(theta);
+    
+end
+
+
+%% Annotations
+annotations
+    Fz2 : Side = bottom;
+    Fz1 : Side = bottom;    
+end
+end % component
+
+

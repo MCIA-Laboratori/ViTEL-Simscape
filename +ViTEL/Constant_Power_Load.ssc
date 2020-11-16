@@ -1,0 +1,39 @@
+component Constant_Power_Load
+% Constant_Power_Load
+% Càrrega constant independent del bus per simular carregues addicionals en
+% un sistema.
+
+% Project: bePower
+% Program: Constant Power Load Model
+% Author: Carles Colls Castro
+% Date Created: 2020 08 04
+% Purpose: Model Validation and comparison
+% Revision History:
+% Date        Author      Ref    Revision (Date in YYYYMMDD format)
+% 20200804    CCC         001    Implementacio inicial
+
+
+nodes
+    p1 = foundation.electrical.electrical; % V+:left
+    n1 = foundation.electrical.electrical; % V-:left
+end
+
+parameters
+    POWER = { 1, 'W'}; % Power
+end
+
+variables %(Access=private)
+    v1 = {0, 'V'}; % Voltage on A side
+    i1 = {0, 'A'}; % Current on A side
+end
+
+branches
+    i1 : p1.i -> n1.i;
+end
+
+equations
+        v1 == p1.v - n1.v;
+        i1 == POWER/v1;
+end
+
+end

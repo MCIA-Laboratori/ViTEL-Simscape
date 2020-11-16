@@ -1,0 +1,87 @@
+component Roda_paviment
+% Roda i Paviment per Vehicle
+% Roda i Paviment de vehicle genèrica per VITEL
+
+% Project: bePower
+% Program: Roda Model
+% Author: Carles Colls Castro
+% Date Created: 2020 08 18
+% Purpose: Component for Driving Cycle Simulation
+
+% Revision History:
+% Date        Author      Ref    Revision (Date in YYYYMMDD format)
+% 20200818    CCC         001    Versió inicial
+% 20200819    CCC         002    Revisió equacions bàsiques i I/O. *
+% 20200826    CCC         003    Afegit lliscament i suavitat (unio dues caixes)
+
+
+inputs
+    Fz = { 0, 'N' }; % Fz
+end
+
+outputs
+    s = {0,'1'}; %s
+end
+
+parameters
+    % Main
+    J = { 0.001, 'kg*m^2' };      % Inertia
+    r = {0.2, 'm'};    % Radius
+    Vhum = {0.1,'m/s'}; % Velocidad Humbral
+    %mu = {0.7,'1'};       % Friction Coeficient
+    
+    % Slip
+    B = {10,'1'};       % Coef B
+    C = {1.9,'1'};       % Coef C
+    D = {1,'1'};       % Coef D
+    E = {0.97,'1'};       % Coef E
+end
+
+parameters(Access = protected)
+    epsilon = {1e-15,'m/s'}; % Evitar 0
+    m = {0.1,'kg'};       % Massa
+end
+
+nodes
+    A = foundation.mechanical.rotational.rotational;
+    H = foundation.mechanical.translational.translational;
+end
+
+variables(Access = protected)
+   T = { 0, 'N*m' };   % Torque at Wheel
+   Fx = { 0, 'N'};     % Horizontal Force
+   Vsx = {0, 'm/s' } % Velocitat Lliscament
+end
+
+branches
+    T : A.t -> *;
+    Fx : * -> H.f;
+end
+
+equations
+    assert(r>0)
+    
+        % Moments a la roda:
+        T + r*Fx == J*der(A.w);
+        
+        A.w*r - H.v == Vsx;
+    
+        % Magic Formula, formulation: 
+        Fx == Fz*D*sin(C*atan(B*s-E*(B*s-atan(B*s))));
+        
+        if abs(H.v)<Vhum %[CCC001] 
+                       
+            s == 2*Vsx/(Vhum+H.v^2/Vhum);
+                       
+        else    
+            Vsx == abs(H.v)*s;   
+        end
+        
+end
+    
+%% Annotations
+annotations
+    Fz : Side = top;
+    H : Side = right;
+end
+end % component

@@ -1,0 +1,153 @@
+component Drive_And_Motor
+% Drive_And_Motor
+% Conjunt d'Inversor i Motor elèctric basats en mapes d'eficiència amb 
+% consigna de parell com a mètode de control.
+
+% Project: bePower
+% Program: Drive_And_Motor
+% Author: Carles Colls Castro
+% Date Created: 2020 10 07
+% Purpose: Component for Driving Cycle Simulation
+
+% Revision History:
+% Date        Author      Ref    Revision (Date in YYYYMMDD format)
+% 20201007    CCC         001    Primera Implementacio
+% 20201013    CCC         002    Unió DRIVE-MOTOR
+% 20201013    CCC         003    MAPA + Correcions Motor/Generador
+% 20201019    CCC         004    Mapa millorat i simplificat (v03.slx)
+% 20201020    CCC         005    Motor/Generador
+% 20201027    CCC         006    Motor/Generador Mapes Externs
+
+inputs
+    T_setpoint = {0,'N*m'} % T_set
+end
+
+outputs
+    Output_Power = {0,'W'}; % P_elec
+    Eta_drive = {0,'1'}; % eta_drive
+    Eta_motor = {0,'1'}; % eta_motor
+    
+end
+
+nodes
+    p1 = foundation.electrical.electrical; % Vin+:left
+    n1 = foundation.electrical.electrical; % Vin-:left
+    A = foundation.mechanical.rotational.rotational; % Axe:right
+end
+
+
+parameters
+      % Motor Variables
+    Tmax={8 , 'N*m'};           % [N*m]  Max Torque
+    nmax={1000, 'rpm'};         % [rpm]  Max Speed
+    Prated={200, 'W'};        % [W]   Pmec rated
+    
+    reversible={0,'1'} %[-] The motor can work as generator
+    
+end
+
+parameters(Size=variable)
+    % Drive Map Variables
+    drive_eta_fPower = { [0.1,0.2,0.4,0.8,0.9,0.92,0.94,0.91,0.9], '1'}; % Performance Values
+    drive_fPower = { [0,10,20,50,80,90,100,200,300],'W'}; % Power Values
+    drive_Max_Power = { 300, 'W'}; % Maximum Power
+
+    % Motor Map Variables
+
+    motor_f_w = { [0,100], '1/s'};    % Speed Range
+    motor_f_T = { [0,20], 'N*m'};     % Torque Range
+    motor_f_Tlim = {[0,20], 'N*m'};   % Motor Torque Limit Envelope
+    
+    motor_eta_fTw = { [[0,1000];[0,1000]],'1'}; % Efficiency Table   
+    
+    gen_f_Tlim = {[0,20], 'N*m'};   % Generator Torque Limit Envelope
+    
+    motor_Max_Power = { 100, 'W'}; % Motor Maximum Power
+           
+end
+
+parameters(Access=private)
+    eta = {1,'1'}; % Instantaneous Parameter
+    omega_epsilon = {1e-20,'1/s'}; % Omega Epsilon for Divisions
+end
+
+variables %(Access=private)
+    v1 = {0, 'V'}; % Voltage on A side
+    i1 = {0, 'A'}; % Current on A side
+    Input_Power = {0,'W'}; % Power on A side
+    Mec_Power = {0, 'W'}; % Axe Mechanical Power
+    T = {0, 'N*m'} % Actual Torque
+    T_map = {0, 'N*m'} % Available Torque at Efficiency Map
+    %motor = {0,'1'}; % Where we are
+end
+
+branches
+    i1 : p1.i -> n1.i;
+    T : * -> A.t;   
+end
+    
+equations
+        
+        v1 == p1.v - n1.v;
+        i1 == -Input_Power/v1;
+        
+        let
+          eta_drive = tablelookup(drive_fPower,drive_eta_fPower,Input_Power);
+        in
+          Output_Power == eta_drive * Input_Power;
+          Eta_drive == eta_drive;
+        end
+
+        let
+        % Two dimensiona look-up-table of the motor's behavoiur:
+        % https://es.mathworks.com/help/physmod/simscape/lang/tablelookup.html
+          eta_motor = tablelookup(motor_f_w , motor_f_T , motor_eta_fTw,...
+                                 abs(A.w) , T,...
+                                 interpolation=linear,extrapolation=linear);
+        in
+          Mec_Power == eta_motor * Output_Power;
+          Eta_motor == eta_motor;
+        end
+        
+        % Soft transition between ranges should be used.
+        if abs(A.w)<max(motor_f_w)
+        % We're within speed range    
+        T_map ==tablelookup(motor_f_w , motor_f_Tlim,abs(A.w),...
+                                        interpolation=linear,extrapolation=linear);
+        
+        T == sign(T_setpoint)*min(abs(T_map),abs(T_setpoint));
+        else
+            % We're outside speed range.
+            T_map == motor_f_Tlim(end);
+            T == {0, 'N*m'};
+        end
+                
+        
+%         if T_setpoint>=0
+%             motor == 1;
+%             T_map == min(Tmax,tablelookup(motor_f_w , motor_f_Tlim,abs(A.w),...
+%                                           interpolation=linear,extrapolation=linear));
+%             T == min(T_map,T_setpoint);
+%         else
+%             motor == 0;
+%             
+%             T_map == max(Tmax,tablelookup(motor_f_w , motor_f_Tlim,abs(A.w),...
+%                                           interpolation=linear,extrapolation=linear));
+%             T == max(T_map,T_setpoint);
+%         end
+        
+        T * A.w *2*pi == Mec_Power;   
+end
+
+annotations
+    T_setpoint : Side = top;
+    Output_Power : Side = right;
+    Eta_drive : Side = right;
+    Eta_motor : Side = right;
+    %duty : Side = top;
+    %p : Side = left;
+    %n : Side = left;
+    %p2 : Side = right;
+    %n2 : Side = Right;
+end
+end

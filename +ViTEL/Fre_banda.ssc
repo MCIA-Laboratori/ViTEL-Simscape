@@ -1,0 +1,65 @@
+component Fre_banda
+% Model Fre de Banda 
+% Model de fre simple per tenir un element de fre en el simulador.
+
+% This model of the Belt Brake is a free interpretation of the equations
+% and models presented in the documentation for Belt Brake, SimDrive.
+% Its documentation defines the same equations and variables described here.
+
+% Project: bePower
+% Program: Model fre de Banda
+% Author: Carles Colls Castro
+% Date Created: 2020 09 21
+% Purpose: Component for Driving Cycle Simulation
+
+% Revision History:
+% Date        Author      Ref    Revision (Date in YYYYMMDD format)
+% 20200921    CCC         001    Versió inicial [validada]
+
+inputs
+    Fin = {0,'N'}; % Unfiltered Input Force
+end
+
+
+parameters
+    omega_llindar = {1,'rad/s'}; % Omega Llindar
+    mu = {0.1,'1/rad'}; % Fregament Banda Banda
+    mu_visc = {0.001,'N*m*s/rad'}; % Fregament Viscos
+    theta = {2*pi/4,'rad'}; % Angle de Contacte
+    rd = {0.1,'m'}; % Radi del Tambor
+end
+
+variables
+    T = {0,'N*m'}; % Axial Torque
+    Fa = {0,'N'}; % Filtered Input Force
+    Finpos = {0,'N'}; % Positive Input Force
+
+end
+
+nodes
+    A = foundation.mechanical.rotational.rotational;
+end
+
+branches
+    T : A.t -> *;
+end
+
+
+equations
+    if Fin<0
+        Finpos == 0;
+    else
+        Finpos == Fin;
+    end
+  
+    T == Fa*(exp(mu*theta)-1)*rd+mu_visc*abs(A.w);
+    
+    if abs(A.w)<abs(omega_llindar)
+        Fa == Finpos*tanh(4*abs(A.w)/omega_llindar);
+    else
+        Fa == Finpos;
+    end
+end
+
+end
+

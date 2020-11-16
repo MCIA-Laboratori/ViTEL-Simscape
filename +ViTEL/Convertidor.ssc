@@ -1,0 +1,72 @@
+component Convertidor < foundation.electrical.branch
+% Convertidor
+% Convertidor Ideal de tensió que transfereix potencia en funció de duty
+% i rendiment.
+
+% Project: bePower
+% Program: Simple Power Converter Model.
+% Author: Carles Colls Castro
+% Date Created: 2020 07 30
+% Purpose: Component for Driving Cycle Simulation
+
+% Revision History:
+% Date        Author      Ref    Revision (Date in YYYYMMDD format)
+% 20200730    CCC         001    Versió inicial
+% 20200804    CCC         002    Prova implementacio tipus trafo + canvi nom
+
+inputs
+    mu = {1,'1'}; % Rendiment
+    duty = {0,'1'}; % Duty 
+end
+
+nodes
+    p2= foundation.electrical.electrical; % V+out
+    n2= foundation.electrical.electrical; % V-out
+end
+
+parameters
+    muei = { 1, '1'}; % Performance
+end
+
+variables %(Access=private)
+    %vA = {0, 'V'}; % Voltage on A side
+    vB = {0, 'V'}; % Voltage on B side
+    %iA = {0, 'A'}; % Current on A side
+    iB = {0, 'A'}; % Current on B side
+    POWA = {0,'W'}; % Power on A side
+    POWB = {0,'W'}; % Power on B side
+    R = {1e-6,'Ohm'} % Resistencia interna
+    %direction = {true, '1ogic'}; % Bool for direction
+end
+
+branches
+    %iA : p.i -> n.i;
+    iB : p2.i -> n2.i;
+end
+    
+% function setup
+%     if ia>0
+%         direction=true;
+%     else
+%         direction=false;
+%     end
+% end
+
+equations
+    v == p.v - n.v;
+    vB == R*iB;
+    vB == p2.v - n2.v;
+    POWA == i*v;
+    POWB == duty*POWA;
+    iB == i*v/vB;
+end
+
+annotations
+    mu : Side = bottom;
+    duty : Side = top;
+    %p : Side = left;
+    %n : Side = left;
+    p2 : Side = right;
+    n2 : Side = Right;
+end
+end
