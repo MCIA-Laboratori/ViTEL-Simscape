@@ -28,6 +28,9 @@ sccprj/
 # Matlab code generation folders
 codegen/
 
+# Folder of Component Simulation Test
+Proves_Components/
+
 # Simulink autosave extension
 *.autosave
 

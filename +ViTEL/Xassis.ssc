@@ -13,6 +13,13 @@ component Xassis
 % 20200818    CCC         001    Versió inicial
 % 20200819    CCC         002    Primera versió funcinal senzilla.
 % 20200822    CCC         003    Versió modificada compatible amb Driveline.
+% 20201128    CCC         004    Acceleració lliure, revisio error roda.
+
+
+% Comentaris:
+% 20201128 CCC : S'afegeix temporalment el terme de "Rolling Friction" pel 
+% desenvolupament de l'acceleració lliure. Posteriorment es revisara i
+% s'implementara a la roda, semblant al model de MATLAB.
 
 inputs
     theta = { 0 , 'rad' }; % theta
@@ -20,8 +27,9 @@ end
 
 outputs
     Speed = { 0 , 'm/s' }; % Speed
-    Fz2 = { 0, 'N'}; % Fzr
-    Fz1 = { 0, 'N'}; % Fzf
+    FzR = { 0, 'N'}; % Fzr
+    FzF = { 0, 'N'}; % Fzf
+    Accel_free = { 0, 'm/s^2'}; % Free Acceleration
     
 end
 
@@ -37,6 +45,8 @@ parameters
     Cd = {0, '1'}; % Coeficient d'arrosegament.
     A1 = {0.1,'m^2'} % Frontal Area.
     ro = {1.18, 'kg/m^3'} % Air density
+    rho = {0.05, '1'} % Coeficient Fregament Rodadura.
+    m_eps = {0.01, '1'} % Increment Massa Efectiva.
 end
 
 parameters(Access = protected)
@@ -52,31 +62,46 @@ end
 variables(Access = protected)
     Fx = { 0, 'N'};     % Horizontal Force
     Fd = { 0, 'N'}; % Wind Force
-    Accel = { 0, 'm/s^2'} % Acceleration
+    Wx = { 0, 'N'}; % Weight on local x-axis
+    Fr = { 0, 'N'}; % Força Rodadura
+    Accel = { 0, 'm/s^2'}; % Acceleration
+    
+    m_eff = {0, 'kg'}; % Effective Mass
 
 end
 
 branches
-     Fx : V.f -> *;
+     Fx : H.f -> *;
 end
 
 equations
+    % Massa Efectiva:
+    m_eff == m*(1+m_eps);
+    
     % Additional equation:
-    Accel == der(V.v);
+    Accel == der(H.v);
     
     % Sortida de velocitat del vehicle:
-    Speed == V.v;
+    Speed == H.v;
     
     % Definició de força de fregament aire:
-    Fd == - 0.5*A1*ro*Cd*(V.v+Vvent)^2*sign(V.v); 
+    Fd == 0.5*A1*ro*Cd*(H.v-Vvent)^2*sign(H.v)*sign(Vvent);
+    
+    % Força horitzontal:
+    Wx == m*g*sin(theta);
+    
+    % Força de Rodadura:
+    Fr == rho*m*g*cos(theta);
     
     % Equilibri: Sumatori moments en O1 i O2.
-    n * Fz1 == -(m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
-    n * Fz2 ==  (m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
+    n * FzR == -(m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
+    n * FzF ==  (m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
     
     % Equilibri: Sumatori forces en X.
-    m*Accel == n * Fx + Fd - m*g*sin(theta);
+    m*Accel == n * Fx + Fd - Wx;   % + Fr;
     
+    Accel_free == (Fd - Wx)/m_eff; % falta +Fr a ();
+      
 end
 
 
