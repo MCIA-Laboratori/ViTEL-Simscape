@@ -14,6 +14,9 @@ component Xassis
 % 20200819    CCC         002    Primera versió funcinal senzilla.
 % 20200822    CCC         003    Versió modificada compatible amb Driveline.
 % 20201128    CCC         004    Acceleració lliure, revisio error roda.
+% 20201215    CCC         005    Velocitat Inicial com a parametre.
+% 20201218    CCC         006    Full english Implmenentation.
+% 20201228    CCC         007    Correction in WindForce Equation not being applied.
 
 
 % Comentaris:
@@ -22,41 +25,44 @@ component Xassis
 % s'implementara a la roda, semblant al model de MATLAB.
 
 inputs
-    theta = { 0 , 'rad' }; % theta
+    theta = { 0 , 'rad' }; % Theta
+    Vw = { 0, 'm/s' }; % Vw
 end
 
 outputs
     Speed = { 0 , 'm/s' }; % Speed
     FzR = { 0, 'N'}; % Fzr
     FzF = { 0, 'N'}; % Fzf
-    Accel_free = { 0, 'm/s^2'}; % Free Acceleration
+    Accel_free = { 0, 'm/s^2'}; % Free Accel.
     
 end
 
-parameters
+parameters    
     m = { 10 , 'kg' };      % Vehicle Mass
-    l1 = {0.1 , 'm' };  % Front Axel distance to C.M.
-    l2 = {0.1 , 'm' };  % Rear Axel distance to C.M.
-    h = {0.1 , 'm' };  % CM height from the ground.
-    n = {1,'1'}; % Number of wheels per axis.
     
-    % Fregament Aire:
-    Vvent = {0,'m/s'}; % Velocitat del Vent (+ de front)
-    Cd = {0, '1'}; % Coeficient d'arrosegament.
-    A1 = {0.1,'m^2'} % Frontal Area.
+    % Geometric parameters:
+    l1 = {0.1 , 'm' };  % Front Axel distance to M.C.
+    l2 = {0.1 , 'm' };  % Rear Axel distance to M.C.
+    h = {0.1 , 'm' };  % M.C. height from the ground
+    n = {1,'1'}; % Number of wheels per axis
+    
+    % Wind Drag Parameters:
+    Cd = {0.4, '1'}; % Vehicle Drag Factor
+    A1 = {0.1,'m^2'} % Frontal Area
     ro = {1.18, 'kg/m^3'} % Air density
-    rho = {0.05, '1'} % Coeficient Fregament Rodadura.
-    m_eps = {0.01, '1'} % Increment Massa Efectiva.
+    
+    % Rolling Parameters:
+    rho = {0.05, '1'} % Rolling Friction Factor
+    m_eps = {0.01, '1'} % Delta Effective Mass
 end
 
 parameters(Access = protected)
-    g = {9.8 , 'm/s^2'} % Gravity acceleratino
+    g = {9.8 , 'm/s^2'} % Gravity acceleration
     Ff = {1, 'N'} % Force Parameter
-    Spiz = { 1 , 'm/s' }; % [V]
 end
 
 nodes
-    V = foundation.mechanical.translational.translational; % X_react
+    H = foundation.mechanical.translational.translational; % X_react
 end
 
 variables(Access = protected)
@@ -64,10 +70,12 @@ variables(Access = protected)
     Fd = { 0, 'N'}; % Wind Force
     Wx = { 0, 'N'}; % Weight on local x-axis
     Fr = { 0, 'N'}; % Força Rodadura
-    Accel = { 0, 'm/s^2'}; % Acceleration
-    
+    Accel = { 0, 'm/s^2'}; % Acceleration    
     m_eff = {0, 'kg'}; % Effective Mass
+end
 
+variables
+    V = {0, 'm/s'} % Vehicle Speed
 end
 
 branches
@@ -79,36 +87,40 @@ equations
     m_eff == m*(1+m_eps);
     
     % Additional equation:
-    Accel == der(H.v);
+    Accel == der(V);
     
-    % Sortida de velocitat del vehicle:
+    % Vehicle Speed Output:
+    V == H.v;
     Speed == H.v;
     
-    % Definició de força de fregament aire:
-    Fd == 0.5*A1*ro*Cd*(H.v-Vvent)^2*sign(H.v)*sign(Vvent);
     
-    % Força horitzontal:
+    % Drag Force Definition (equation):
+    % vehicle: + -->
+    % wind: + --> 
+    Fd == -(0.5*A1*ro*Cd*(V-Vw)^2)*sign(V-Vw);
+
+    % Weight decomposition, Horizontal Force:
     Wx == m*g*sin(theta);
     
-    % Força de Rodadura:
+    % Rolling Force:
     Fr == rho*m*g*cos(theta);
     
-    % Equilibri: Sumatori moments en O1 i O2.
+    % Equilibrium: Momentum on O1 and O2.
     n * FzR == -(m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
     n * FzF ==  (m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
     
-    % Equilibri: Sumatori forces en X.
-    m*Accel == n * Fx + Fd - Wx;   % + Fr;
+    % Equilibrium: Forces on X axis.
+    m*Accel == n * Fx + Fd - Wx;   % + Fr; % Validation Pending
     
-    Accel_free == (Fd - Wx)/m_eff; % falta +Fr a ();
+    Accel_free == (Fd - Wx)/m_eff; % +Fr; % Validation Pending
       
 end
 
 
 %% Annotations
 annotations
-    Fz2 : Side = bottom;
-    Fz1 : Side = bottom;    
+    FzR : Side = bottom;
+    FzF : Side = bottom;    
 end
 end % component
 
