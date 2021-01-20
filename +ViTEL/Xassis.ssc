@@ -17,6 +17,7 @@ component Xassis
 % 20201215    CCC         005    Velocitat Inicial com a parametre.
 % 20201218    CCC         006    Full english Implmenentation.
 % 20201228    CCC         007    Correction in WindForce Equation not being applied.
+% 20210119    CCC         008    Correction in Front-Rear Signs.
 
 
 % Comentaris:
@@ -106,8 +107,8 @@ equations
     Fr == rho*m*g*cos(theta);
     
     % Equilibrium: Momentum on O1 and O2.
-    n * FzR == -(m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
-    n * FzF ==  (m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
+    n * FzR ==   (m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
+    n * FzF == - (m*Accel - Fd)*h/(l1+l2) + m*g*cos(theta)*l2/(l1+l2);
     
     % Equilibrium: Forces on X axis.
     m*Accel == n * Fx + Fd - Wx;   % + Fr; % Validation Pending
