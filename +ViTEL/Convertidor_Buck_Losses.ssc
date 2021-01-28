@@ -1,7 +1,7 @@
 component Convertidor_Buck_Losses
 % Convertidor_Buck_Losses
-% Convertidor Reductor de tensió que transfereix potencia en funció de duty
-% i rendiment, on aquest varia en funcio de la potencia entregada.
+% Buck Converter. Voltage based, transfer power from any side with losses
+% taken from ints performance curve.
 
 % Project: bePower
 % Program: Simple Buck-Like Converter with performance curve.
@@ -13,6 +13,9 @@ component Convertidor_Buck_Losses
 % Revision History:
 % Date        Author      Ref    Revision (Date in YYYYMMDD format)
 % 20200806    CCC         001    Primera Implementacio
+% 20200107    CCC         002    Traduccio
+% 20210107    CCC         003    Correcio rendiment bidireccional [ADD]
+% 20210112    CCC         004    Reformulacio
 
 
 inputs
@@ -53,11 +56,14 @@ equations
         v1 == p1.v - n1.v;
         v2 == p2.v - n2.v;
         v2 == duty*v1;
-        POW == abs(v2*i2);
+        % Power on A side:
+        POW == abs(v1*i1);
         let
           mu = tablelookup(fPOW,mu_fPOW,POW,interpolation=linear,extrapolation=linear);
         in
-          i1 == -i2/(mu)*v2/v1;
+          %i1 == -i2/(mu)*v2/v1;
+          % Current on A side:
+          i1 == i2/(mu)*v2/v1;
         end
 end
 

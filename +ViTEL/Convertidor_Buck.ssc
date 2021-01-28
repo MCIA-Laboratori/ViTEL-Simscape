@@ -13,6 +13,7 @@ component Convertidor_Buck
 % Date        Author      Ref    Revision (Date in YYYYMMDD format)
 % 20200730    CCC         001    Versió inicial
 % 20200804    CCC         002    Prova implementacio tipus trafo
+% 20210107    CCC         003    Correcio rendiment bidireccional
 
 inputs
     mu = {1,'1'}; % Rendiment
