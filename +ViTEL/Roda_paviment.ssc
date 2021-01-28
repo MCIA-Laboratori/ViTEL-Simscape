@@ -13,6 +13,8 @@ component Roda_paviment
 % 20200818    CCC         001    Versió inicial
 % 20200819    CCC         002    Revisió equacions bàsiques i I/O. *
 % 20200826    CCC         003    Afegit lliscament i suavitat (unio dues caixes)
+% 20201221    CCC         004    Full english translation.
+% 20201223    CCC         005    Inertia Correction.
 
 
 inputs
@@ -27,7 +29,7 @@ parameters
     % Main
     J = { 0.001, 'kg*m^2' };      % Inertia
     r = {0.2, 'm'};    % Radius
-    Vhum = {0.1,'m/s'}; % Velocidad Humbral
+    Vhum = {0.1,'m/s'}; % Sliding Threshold Speed
     %mu = {0.7,'1'};       % Friction Coeficient
     
     % Slip
@@ -38,8 +40,8 @@ parameters
 end
 
 parameters(Access = protected)
-    epsilon = {1e-15,'m/s'}; % Evitar 0
-    m = {0.1,'kg'};       % Massa
+    epsilon = {1e-15,'m/s'}; % Temporal Variable (Machine Error)
+    m = {0.1,'kg'};          % Mass
 end
 
 nodes
@@ -50,7 +52,7 @@ end
 variables(Access = protected)
    T = { 0, 'N*m' };   % Torque at Wheel
    Fx = { 0, 'N'};     % Horizontal Force
-   Vsx = {0, 'm/s' } % Velocitat Lliscament
+   Vsx = {0, 'm/s' }   % Sliding Speed
 end
 
 branches
@@ -61,14 +63,21 @@ end
 equations
     assert(r>0)
     
-        % Moments a la roda:
-        T + r*Fx == J*der(A.w);
+        % Equilibrium. Momentum at Wheel axel:
+        if J==0
+            T - r*Fx == 0;
+        else
+            T - r*Fx == J*der(A.w);
+        end
         
+        % Sliding definition:
         A.w*r - H.v == Vsx;
     
         % Magic Formula, formulation: 
         Fx == Fz*D*sin(C*atan(B*s-E*(B*s-atan(B*s))));
         
+        % Threshold for infinte speed at zero sliding.
+        % Smoothness of the function.
         if abs(H.v)<Vhum %[CCC001] 
                        
             s == 2*Vsx/(Vhum+H.v^2/Vhum);
