@@ -15,6 +15,7 @@ component Fre_banda
 % Revision History:
 % Date        Author      Ref    Revision (Date in YYYYMMDD format)
 % 20200921    CCC         001    Versió inicial [validada]
+% 20210129    CCC         002    English Translation.
 
 inputs
     Fin = {0,'N'}; % Unfiltered Input Force
@@ -22,11 +23,11 @@ end
 
 
 parameters
-    omega_llindar = {1,'rad/s'}; % Omega Llindar
-    mu = {0.1,'1/rad'}; % Fregament Banda Banda
-    mu_visc = {0.001,'N*m*s/rad'}; % Fregament Viscos
-    theta = {2*pi/4,'rad'}; % Angle de Contacte
-    rd = {0.1,'m'}; % Radi del Tambor
+    omega_llindar = {1,'rad/s'}; % Threshold Speed
+    mu = {0.1,'1/rad'}; % Friction Coefficient
+    mu_visc = {0.001,'N*m*s/rad'}; % Viscous Friction Coefficient
+    theta = {2*pi/4,'rad'}; % Contact Angle
+    rd = {0.1,'m'}; % Drum Radius
 end
 
 variables
@@ -46,14 +47,17 @@ end
 
 
 equations
+    % Limit on input force range:
     if Fin<0
         Finpos == 0;
     else
         Finpos == Fin;
     end
-  
+    
+    % Main Force-Torque Equation:
     T == Fa*(exp(mu*theta)-1)*rd+mu_visc*abs(A.w);
     
+    % Threshold limit:
     if abs(A.w)<abs(omega_llindar)
         Fa == Finpos*tanh(4*abs(A.w)/omega_llindar);
     else
