@@ -17,6 +17,7 @@ component Drive_And_Motor
 % 20201019    CCC         004    Mapa millorat i simplificat (v03.slx)
 % 20201020    CCC         005    Motor/Generador
 % 20201027    CCC         006    Motor/Generador Mapes Externs
+% 20210520    CCC         007    Correccio unitats
 
 inputs
     T_setpoint = {0,'N*m'} % T_set
@@ -54,7 +55,7 @@ parameters(Size=variable)
 
     % Motor Map Variables
 
-    motor_f_w = { [0,100,1000], '1/s'};    % Speed Range
+    motor_f_w = { [0,100,1000], 'rad/s'};    % Speed Range
     motor_f_T = { [0,10], 'N*m'};     % Torque Range
     motor_f_Tlim = {[21,21,10], 'N*m'};   % Motor Torque Limit Envelope
     
@@ -136,7 +137,7 @@ equations
 %             T == max(T_map,T_setpoint);
 %         end
         
-        T * A.w *2*pi == Mec_Power;   
+        T * A.w == Mec_Power;   
 end
 
 annotations
